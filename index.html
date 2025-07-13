@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three.js Circle design</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+}
+#canvas-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+#text-overlay {
+    position: absolute;
+    bottom: 60px;
+    right: 60px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12rem;
+    font-weight: 600;
+    color: #333;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    letter-spacing: 2px;
+    z-index: 10;
+}
+</style>
+</head>
+<body>
+<div id="canvas-container">
+<div id="text-overlay">Circle</div>
+</div>
+<!-- Three.js library from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+const camera = new THREE.PerspectiveCamera(
+    75, // FOV (degrees)
+    window.innerWidth / window.innerHeight, // Aspect ratio
+    0.1, // Near clip
+    1000 // Far clip
+);
+camera.position.z = 5;
+
+// RENDERER SETUP
+const renderer = new THREE.WebGLRenderer({
+    antialias: true
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+// CREATE THE CIRCLE
+const circleGeometry = new THREE.CircleGeometry(3, 128);
+const circleMaterial = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    side: THREE.DoubleSide
+});
+const circle = new THREE.Mesh(circleGeometry, circleMaterial);
+circle.position.x = -2.5;
+circle.position.y = 0;
+scene.add(circle);
+
+// COLOR SWITCHING
+let isDark = true;
+let isHovering = false;
+let hoverStartTime = 0;
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function onMouseClick(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(circle);
+    
+    if (intersects.length > 0) {
+        isDark = !isDark;
+        if (isDark) {
+            scene.background.setHex(0xffffff);
+            circleMaterial.color.setHex(0x000000);
+        } else {
+            scene.background.setHex(0x000000);
+            circleMaterial.color.setHex(0xffffff);
+        }
+    }
+}
+
+function onMouseMove(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(circle);
+    
+    if (intersects.length > 0) {
+        if (!isHovering) {
+            isHovering = true;
+            hoverStartTime = Date.now();
+        }
+    } else {
+        isHovering = false;
+    }
+}
+
+window.addEventListener('click', onMouseClick);
+window.addEventListener('mousemove', onMouseMove);
+
+// RENDER LOOP
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Pulse animation using sine function
+    const time = Date.now() * 0.002;
+    let timeMultiplier = 1;
+    
+    if (isHovering) {
+        const hoverDuration = (Date.now() - hoverStartTime) * 0.001; // Convert to seconds
+        timeMultiplier = 0.1 + hoverDuration * 0.5; // Gradually increase speed
+    }
+    
+    const scale = 1 + Math.sin(time * timeMultiplier) * 0.01;
+    circle.scale.set(scale, scale, scale);
+
+    renderer.render(scene, camera);
+}
+
+// Start the animation loop
+animate();
+
+window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
