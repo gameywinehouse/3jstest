@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Three.js Circle design</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Helvetica:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Helvetica', sans-serif;
 }
 #canvas-container {
     position: relative;
@@ -19,10 +19,10 @@ body {
 }
 #text-overlay {
     position: absolute;
-    bottom: 60px;
-    right: 60px;
-    font-family: 'Poppins', sans-serif;
-    font-size: 12rem;
+    bottom: 4vw;
+    right: 4vw;
+    font-family: 'Helvetica', sans-serif;
+    font-size: 8vw;
     font-weight: 600;
     color: #333;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
@@ -43,7 +43,7 @@ npm run build
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 const camera = new THREE.PerspectiveCamera(
-    75, // FOV (degrees)
+    50, // FOV (degrees)
     window.innerWidth / window.innerHeight, // Aspect ratio
     0.1, // Near clip
     1000 // Far clip
@@ -64,9 +64,17 @@ const circleMaterial = new THREE.MeshBasicMaterial({
     side: THREE.DoubleSide
 });
 const circle = new THREE.Mesh(circleGeometry, circleMaterial);
-circle.position.x = -2.5;
-circle.position.y = 0;
 scene.add(circle);
+
+// Function to scale elements based on screen size
+function updateSizes() {
+    const baseSize = Math.min(window.innerWidth, window.innerHeight) * 0.0008;
+    circle.scale.setScalar(baseSize);
+    circle.position.x = -window.innerWidth * 0.0008;
+    circle.position.y = 0;
+}
+
+updateSizes();
 
 // COLOR SWITCHING
 let isDark = true;
@@ -111,24 +119,67 @@ function onMouseMove(event) {
     }
 }
 
+function onTouch(event) {
+    event.preventDefault();
+    const touch = event.touches[0];
+    mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(circle);
+    
+    if (intersects.length > 0) {
+        isDark = !isDark;
+        if (isDark) {
+            scene.background.setHex(0xffffff);
+            circleMaterial.color.setHex(0x000000);
+        } else {
+            scene.background.setHex(0x000000);
+            circleMaterial.color.setHex(0xffffff);
+        }
+    }
+}
+
+function onTouchMove(event) {
+    event.preventDefault();
+    const touch = event.touches[0];
+    mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(circle);
+    
+    if (intersects.length > 0) {
+        if (!isHovering) {
+            isHovering = true;
+            hoverStartTime = Date.now();
+        }
+    } else {
+        isHovering = false;
+    }
+}
+
 window.addEventListener('click', onMouseClick);
 window.addEventListener('mousemove', onMouseMove);
+window.addEventListener('touchstart', onTouch);
+window.addEventListener('touchmove', onTouchMove);
 
 // RENDER LOOP
 function animate() {
     requestAnimationFrame(animate);
 
     // Pulse animation using sine function
-    const time = Date.now() * 0.002;
+    const time = Date.now() * 0.001;
     let timeMultiplier = 1;
     
     if (isHovering) {
-        const hoverDuration = (Date.now() - hoverStartTime) * 0.001; // Convert to seconds
-        timeMultiplier = 0.1 + hoverDuration * 0.5; // Gradually increase speed
+        const hoverDuration = (Date.now() - hoverStartTime) * 0.0001;
+        timeMultiplier = 1 + hoverDuration * 0.5;
     }
     
-    const scale = 1 + Math.sin(time * timeMultiplier) * 0.01;
-    circle.scale.set(scale, scale, scale);
+    const baseSize = Math.min(window.innerWidth, window.innerHeight) * 0.0008;
+    const pulseScale = 1 + Math.sin(time * timeMultiplier) * 0.01;
+    circle.scale.setScalar(baseSize * pulseScale);
 
     renderer.render(scene, camera);
 }
@@ -140,6 +191,7 @@ window.addEventListener('resize', function() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    updateSizes();
 });
 </script>
 </body>
