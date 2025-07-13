@@ -22,12 +22,22 @@ body {
     bottom: 4vw;
     right: 4vw;
     font-family: 'Helvetica', sans-serif;
-    font-size: 8vw;
+    font-size: min(15vw, 15vh);
     font-weight: 600;
     color: #333;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     letter-spacing: 2px;
     z-index: 10;
+}
+
+@media (orientation: portrait) {
+    #text-overlay {
+        bottom: 2vh;
+        right: 50%;
+        transform: translateX(50%);
+        font-size: min(20vw, 20vh);
+        text-align: center;
+    }
 }
 </style>
 </head>
@@ -68,10 +78,25 @@ scene.add(circle);
 
 // Function to scale elements based on screen size
 function updateSizes() {
-    const baseSize = Math.min(window.innerWidth, window.innerHeight) * 0.0008;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const isPortrait = screenHeight > screenWidth;
+    const minDimension = Math.min(screenWidth, screenHeight);
+    
+    // Scale circle based on screen size
+    const baseSize = minDimension * 0.0008;
     circle.scale.setScalar(baseSize);
-    circle.position.x = -window.innerWidth * 0.0008;
-    circle.position.y = 0;
+    
+    // Adjust positioning based on orientation
+    if (isPortrait) {
+        // Portrait: center the circle more and move it up slightly
+        circle.position.x = 0;
+        circle.position.y = screenHeight * 0.0002;
+    } else {
+        // Landscape: position to the left like original
+        circle.position.x = -screenWidth * 0.0008;
+        circle.position.y = 0;
+    }
 }
 
 updateSizes();
@@ -169,15 +194,20 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Pulse animation using sine function
-    const time = Date.now() * 0.001;
+    const time = Date.now() * 0.002;
     let timeMultiplier = 1;
     
     if (isHovering) {
-        const hoverDuration = (Date.now() - hoverStartTime) * 0.0001;
+        const hoverDuration = (Date.now() - hoverStartTime) * 0.001;
         timeMultiplier = 1 + hoverDuration * 0.5;
     }
     
-    const baseSize = Math.min(window.innerWidth, window.innerHeight) * 0.0008;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const isPortrait = screenHeight > screenWidth;
+    const minDimension = Math.min(screenWidth, screenHeight);
+    
+    const baseSize = minDimension * 0.0008;
     const pulseScale = 1 + Math.sin(time * timeMultiplier) * 0.01;
     circle.scale.setScalar(baseSize * pulseScale);
 
